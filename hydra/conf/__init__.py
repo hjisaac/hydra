@@ -5,32 +5,48 @@ from typing import Any, Dict, List, Optional
 from omegaconf import MISSING
 
 from hydra.core.config_store import ConfigStore
-from hydra.types import RunMode
+
+hydra_defaults = [
+    # Hydra's logging config
+    {"hydra/hydra_logging": "default"},
+    # Job's logging config
+    {"hydra/job_logging": "default"},
+    # Launcher config
+    {"hydra/launcher": "basic"},
+    # Sweeper config
+    {"hydra/sweeper": "basic"},
+    # Output directory
+    {"hydra/output": "default"},
+    # --help template
+    {"hydra/help": "default"},
+    # --hydra-help template
+    {"hydra/hydra_help": "default"},
+]
 
 
 @dataclass
 class HelpConf:
-    app_name: str = MISSING
-    header: str = MISSING
-    footer: str = MISSING
-    template: str = MISSING
+    app_name: str = ""
+    header: str = ""
+    footer: str = ""
+    template: str = ""
 
 
 @dataclass
 class HydraHelpConf:
-    hydra_help: str = MISSING
-    template: str = MISSING
+    hydra_help: str = ""
+    template: str = ""
 
 
 @dataclass
 class RunDir:
-    dir: str = MISSING
+    dir: str = ""
 
 
 @dataclass
 class SweepDir:
-    dir: str = MISSING
-    subdir: str = MISSING
+    dir: str = ""
+    subdir: str = ""
 
 
 @dataclass
@@ -45,26 +61,22 @@ class OverridesConf:
 @dataclass
 class JobConf:
     # Job name, populated automatically unless specified by the user (in config or cli)
-    name: str = MISSING
-
-    # Change current working dir to the output dir.
-    # Will be non-optional and default to False in Hydra 1.3
-    chdir: Optional[bool] = None
+    name: Optional[str] = None
 
     # Populated automatically by Hydra.
     # Concatenation of job overrides that can be used as a part
     # of the directory name.
     # This can be configured via hydra.job.config.override_dirname
-    override_dirname: str = MISSING
+    override_dirname: Optional[str] = None
 
     # Job ID in underlying scheduling system
-    id: str = MISSING
+    id: str = ""
 
     # Job number if job is a part of a sweep
-    num: int = MISSING
+    num: int = 0
 
     # The config name used by the job
-    config_name: Optional[str] = MISSING
+    config_name: Optional[str] = None
 
     # Environment variables to set remotely
     env_set: Dict[str, str] = field(default_factory=dict)
@@ -87,62 +99,26 @@ class JobConf:
 
 
 @dataclass
-class ConfigSourceInfo:
-    path: str
-    schema: str
-    provider: str
-
-
-@dataclass
 class RuntimeConf:
-    version: str = MISSING
-    version_base: str = MISSING
-    cwd: str = MISSING
-    config_sources: List[ConfigSourceInfo] = MISSING
-    output_dir: str = MISSING
-
-    # Composition choices dictionary
-    # Ideally, the value type would be Union[str, List[str], None]
-    choices: Dict[str, Any] = field(default_factory=lambda: {})
+    version: str = ""
+    cwd: str = ""
 
 
 @dataclass
 class HydraConf:
-    defaults: List[Any] = field(
-        default_factory=lambda: [
-            {"output": "default"},
-            {"launcher": "basic"},
-            {"sweeper": "basic"},
-            {"help": "default"},
-            {"hydra_help": "default"},
-            {"hydra_logging": "default"},
-            {"job_logging": "default"},
-            {"callbacks": None},
-            # env specific overrides
-            {"env": "default"},
-        ]
-    )
-
-    mode: Optional[RunMode] = None
-    # Elements to append to the config search path.
-    # Note: This can only be configured in the primary config.
-    searchpath: List[str] = field(default_factory=list)
-
     # Normal run output configuration
     run: RunDir = field(default_factory=RunDir)
     # Multi-run output configuration
     sweep: SweepDir = field(default_factory=SweepDir)
     # Logging configuration for Hydra
-    hydra_logging: Dict[str, Any] = MISSING
+    hydra_logging: Optional[Any] = None
     # Logging configuration for the job
-    job_logging: Dict[str, Any] = MISSING
+    job_logging: Optional[Any] = None
 
     # Sweeper configuration
-    sweeper: Any = MISSING
+    sweeper: Optional[Any] = None
     # Launcher configuration
-    launcher: Any = MISSING
-    # Callbacks configuration
-    callbacks: Dict[str, Any] = field(default_factory=dict)
+    launcher: Optional[Any] = None
 
     # Program Help template
     help: HelpConf = field(default_factory=HelpConf)
@@ -174,11 +150,13 @@ class HydraConf:
     verbose: Any = False
 
 
-cs = ConfigStore.instance()
-
-cs.store(
-    group="hydra",
-    name="config",
-    node=HydraConf(),
+ConfigStore.instance().store(
+    name="hydra_config",
+    node={
+        # Hydra composition defaults
+        "defaults": hydra_defaults,
+        # Hydra config
+        "hydra": HydraConf,
+    },
     provider="hydra",
 )
