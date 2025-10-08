@@ -3,8 +3,10 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 # from omegaconf import MISSING
+from omegaconf import MISSING
 
 from hydra.core.config_store import ConfigStore
+from hydra.types import RunMode
 
 hydra_defaults = [
     # Hydra's logging config
@@ -57,11 +59,13 @@ class OverridesConf:
     task: List[str] = field(default_factory=lambda: [])
 
 
-# job runtime information will be populated here
 @dataclass
 class JobConf:
     # Job name, populated automatically unless specified by the user (in config or cli)
     name: Optional[str] = None
+
+    # Change current working dir to the output dir.
+    chdir: Optional[bool] = None
 
     # Populated automatically by Hydra.
     # Concatenation of job overrides that can be used as a part
@@ -99,9 +103,20 @@ class JobConf:
 
 
 @dataclass
+class ConfigSourceInfo:
+    path: str = ""
+    schema: str = ""
+    provider: str = ""
+
+
+@dataclass
 class RuntimeConf:
     version: str = ""
+    version_base: str = ""
     cwd: str = ""
+    config_sources: List[ConfigSourceInfo] = field(default_factory=list)
+    output_dir: str = ""
+    choices: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
